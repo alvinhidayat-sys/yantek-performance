@@ -123,6 +123,7 @@ footer{text-align:center;color:var(--muted);font-size:.76rem;padding:18px}
     <div class="toolbar">
       <div class="crumb" id="crumb">Memuat data dari database…</div>
       <button class="csv" id="btnCsv">⬇ Export CSV</button>
+      <button class="csv" id="btnXls" style="margin-left:8px;background:#1d6f42">⬇ Export Excel (.xls)</button>
     </div>
     <div class="legend">
       <span><i class="dot" style="background:var(--red)"></i> &lt; 40 (under performance)</span>
@@ -355,7 +356,7 @@ function renderTable(type, rows){
   let body = '<tbody>' + rows.map((r,i)=>{
     return '<tr>' + cols.map(c=>{
       const key=c[1];
-      if(key==='nama') return `<td class="name">${esc(r[key])}</td>`;
+      if(key==='nama') return `<td class="name b-${thresholdClass(r.persen_skor)}">${esc(r[key])}</td>`;
       if(key==='ulp') return `<td>${esc(r[key])}</td>`;
       if(key==='no') return `<td>${r[key]!==undefined?r[key]:i+1}</td>`;
       if(key==='persen_skor') return `<td>${badge(r[key])}</td>`;
@@ -438,6 +439,48 @@ document.getElementById('btnCsv').addEventListener('click', ()=>{
   const blob = new Blob(["\uFEFF"+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url; a.download=`monitoring_yo_${currentTableType}_${Date.now()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+function excelThresholdColors(v){
+  if(v>70) return {bg:'#C6EFCE', fg:'#006100'};
+  if(v>=40) return {bg:'#FFEB9C', fg:'#9C6500'};
+  return {bg:'#FFC7CE', fg:'#9C0006'};
+}
+document.getElementById('btnXls').addEventListener('click', ()=>{
+  const cols = COLS[currentTableType];
+  let thead = '<tr>' + cols.map(c=>`<th style="background:#0b2745;color:#ffffff;font-weight:bold;padding:6px 10px;border:1px solid #9fb3c8;">${esc(c[0])}</th>`).join('') + '</tr>';
+  let tbody = currentRows.map((r,i)=>{
+    const col = excelThresholdColors(r.persen_skor);
+    return '<tr>' + cols.map(c=>{
+      const key=c[1];
+      let v = key==='no' ? (r[key]!==undefined?r[key]:i+1) : r[key];
+      if(typeof v === 'number' && key!=='no') v = v.toFixed(2);
+      const isNameOrScore = (key==='nama' || key==='persen_skor');
+      const style = isNameOrScore
+        ? `background:${col.bg};color:${col.fg};font-weight:bold;padding:5px 9px;border:1px solid #d9d9d9;`
+        : `padding:5px 9px;border:1px solid #d9d9d9;text-align:center;`;
+      return `<td style="${style}">${esc(v!==undefined&&v!==null?v:'')}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Monitoring YO</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+</head><body>
+<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt;">
+${thead}${tbody}
+</table>
+<p style="font-family:Calibri,Arial,sans-serif;font-size:9pt;color:#5b6b7f;">
+Threshold: <span style="background:#FFC7CE;color:#9C0006;padding:2px 6px;">&lt; 40 (under performance)</span>
+<span style="background:#FFEB9C;color:#9C6500;padding:2px 6px;">40–70 (mid performance)</span>
+<span style="background:#C6EFCE;color:#006100;padding:2px 6px;">&gt; 70 (high performance)</span>
+</p>
+</body></html>`;
+  const blob = new Blob([html], {type:'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`monitoring_yo_${currentTableType}_${Date.now()}.xls`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 });
 
