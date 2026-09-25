@@ -28,7 +28,7 @@ header.top h1{margin:0;font-size:1.12rem;font-weight:700}
 header.top p{margin:4px 0 0;font-size:.8rem;color:#cfe0f2;opacity:.9}
 .wrap{max-width:1180px;margin:0 auto;padding:16px 16px 40px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
-.sync-box{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--paper);margin-bottom:14px}
+.sync-box{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--paper);margin-bottom:14px;flex-wrap:wrap}
 .switch{position:relative;width:42px;height:24px;flex:none}
 .switch input{opacity:0;width:0;height:0}
 .slider{position:absolute;inset:0;background:#c7d0da;border-radius:24px;cursor:pointer;transition:.2s}
@@ -39,14 +39,14 @@ input:checked + .slider:before{transform:translateX(18px)}
 .sync-status{font-size:.78rem;color:var(--muted);margin-top:2px}
 .sync-status.ok{color:var(--green)}
 .sync-status.wait{color:var(--yellow)}
+.sync-status.err{color:var(--red)}
 .sync-btn{margin-left:auto;background:var(--navy2);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap}
 .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}
 @media (max-width:800px){.filters{grid-template-columns:1fr 1fr}}
 .field label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px;font-weight:600}
 select{width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:.88rem}
+select:disabled{opacity:.5}
 .chk{display:flex;align-items:center;gap:8px;padding:9px 4px}
-.chk input{width:17px;height:17px;accent-color:var(--navy2)}
-.chk span{font-weight:600;font-size:.9rem}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .crumb{font-size:.95rem;color:var(--muted)}
 .crumb b{color:var(--ink)}
@@ -65,9 +65,6 @@ tbody tr:hover{background:rgba(18,58,99,.05)}
 .b-green{background:var(--green-bg);color:var(--green)}
 .b-yellow{background:var(--yellow-bg);color:var(--yellow)}
 .b-red{background:var(--red-bg);color:var(--red)}
-.tag{font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}
-.tag-live{background:#e6f4ea;color:#2f8f4e}
-.tag-ref{background:#eef1f5;color:#5b6b7f}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
 @media (max-width:800px){.grid3{grid-template-columns:1fr}}
 .mini{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
@@ -89,16 +86,16 @@ footer{text-align:center;color:var(--muted);font-size:.76rem;padding:18px}
 <body>
 <header class="top">
   <h1>Monitoring Performa YO — Regional SULMAPANA</h1>
-  <p>Sumber database: Google Sheets "DATABASE" · Acuan rumus &amp; pivot: file Excel rekap · <span id="asOf"></span></p>
+  <p>Sumber data tunggal: Google Sheets "DATABASE" (live) · <span id="asOf"></span></p>
 </header>
 <div class="wrap">
 
   <div class="panel">
     <div class="sync-box">
-      <label class="switch"><input type="checkbox" id="toggleSync"><span class="slider"></span></label>
+      <label class="switch"><input type="checkbox" id="toggleSync" checked></label>
       <div>
         <div class="sync-title">Sinkron Otomatis dari Google Sheets (DATABASE)</div>
-        <div class="sync-status wait" id="syncStatus">● Terputus — memakai data lokal (snapshot database + referensi pivot Excel)</div>
+        <div class="sync-status wait" id="syncStatus">● Menghubungkan ke database…</div>
       </div>
       <button class="sync-btn" id="btnSyncNow">Tarik Data Sekarang</button>
     </div>
@@ -109,32 +106,30 @@ footer{text-align:center;color:var(--muted);font-size:.76rem;padding:18px}
       </div>
       <div class="field">
         <label>Nama Dist</label>
-        <select id="fDist"><option value="">Semua Dist</option></select>
+        <select id="fDist" disabled><option value="">Semua Dist</option></select>
       </div>
       <div class="field">
         <label>Nama Area (UP3)</label>
-        <select id="fArea"><option value="">Semua Area</option></select>
+        <select id="fArea" disabled><option value="">Semua Area</option></select>
       </div>
       <div class="field">
         <label>Nama ULP</label>
-        <select id="fUlp"><option value="">Semua ULP</option></select>
+        <select id="fUlp" disabled><option value="">Semua ULP</option></select>
       </div>
     </div>
   </div>
 
   <div class="panel">
     <div class="toolbar">
-      <div class="crumb" id="crumb"></div>
+      <div class="crumb" id="crumb">Memuat data dari database…</div>
       <button class="csv" id="btnCsv">⬇ Export CSV</button>
     </div>
     <div class="legend">
       <span><i class="dot" style="background:var(--red)"></i> &lt; 40 (under performance)</span>
       <span><i class="dot" style="background:var(--yellow)"></i> 40–70 (mid performance)</span>
       <span><i class="dot" style="background:var(--green)"></i> &gt; 70 (high performance)</span>
-      <span><i class="tag tag-live">LIVE</i> dihitung langsung dari baris DATABASE</span>
-      <span><i class="tag tag-ref">REF EXCEL</i> memakai nilai pivot acuan (baris mentah belum ada di database lokal)</span>
     </div>
-    <div class="tbl-wrap"><table id="mainTable"></table></div>
+    <div class="tbl-wrap"><table id="mainTable"><tr><td class="empty" id="loadingCell">Menghubungkan ke database Google Sheets…</td></tr></table></div>
 
     <div class="chart">
       <h3 style="font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:18px 0 10px">Preview Chart — Persentase Skor</h3>
@@ -146,53 +141,41 @@ footer{text-align:center;color:var(--muted);font-size:.76rem;padding:18px}
 
   <div class="panel note" id="syncExplain"></div>
 
-  <footer>Baris petugas mentah tersedia penuh untuk WILAYAH PAPUA DAN PAPUA BARAT (snapshot database); wilayah lain memakai referensi pivot Excel sampai baris mentahnya tersinkron.</footer>
+  <footer>Seluruh angka dihitung langsung dari baris mentah tab DATABASE (Nama Dist, Nama Area, Nama Ulp, Nama Petugas) — tidak ada data offline/Excel yang disematkan.</footer>
 </div>
 
 <script>
-// ---- Referensi pivot Excel (fallback bila baris mentah database belum tersedia) ----
-const FALLBACK = {"ulp":[{"no":1,"nama":"ULP AGATS","rct":175.11,"hari_kerja":22,"jam_kerja":9.459545454545456,"skor_hari":5,"skor_performa":5,"skor_produktivitas":5,"total_skor":15,"kemarin":93.3,"persen_skor":100,"persen_naik":0.06700000000000003,"up3":"UP3 TIMIKA"},{"no":2,"nama":"ULP TIMIKA JAYA","rct":171.79500000000002,"hari_kerja":22.142857142857142,"jam_kerja":9.308863636363636,"skor_hari":5,"skor_performa":5,"skor_produktivitas":5,"total_skor":15,"kemarin":94.25714285714285,"persen_skor":100,"persen_naik":0.057428571428571475,"up3":"UP3 TIMIKA"},{"no":3,"nama":"ULP TIMIKA KOTA","rct":175.3190909090909,"hari_kerja":22.045454545454547,"jam_kerja":9.469049586776858,"skor_hari":4.954545454545454,"skor_performa":5,"skor_produktivitas":4.927272727272728,"total_skor":14.881818181818181,"kemarin":92.82272727272726,"persen_skor":99.2090909090909,"persen_naik":0.06437276642536428,"up3":"UP3 TIMIKA"},{"no":4,"nama":"ULP BIAK KOTA","rct":149.76095238095238,"hari_kerja":21.666666666666668,"jam_kerja":8.307316017316017,"skor_hari":4.685714285714286,"skor_performa":5,"skor_produktivitas":4.628571428571429,"total_skor":14.314285714285717,"kemarin":87.98095238095237,"persen_skor":95.42380952380952,"persen_naik":0.07799790408703036,"up3":"UP3 BIAK"},{"no":5,"nama":"ULP YUMDORI","rct":158.07874999999999,"hari_kerja":21.5,"jam_kerja":8.685397727272726,"skor_hari":4.508333333333334,"skor_performa":5,"skor_produktivitas":4.716666666666667,"total_skor":14.225,"kemarin":88.98333333333333,"persen_skor":94.825,"persen_naik":0.06160471043149664,"up3":"UP3 BIAK"},{"no":6,"nama":"ULP MERAUKE KOTA","rct":175.82457142857143,"hari_kerja":21,"jam_kerja":9.872598639455783,"skor_hari":4.0685714285714285,"skor_performa":5,"skor_produktivitas":4.982857142857143,"total_skor":14.05142857142857,"kemarin":87.70285714285714,"persen_skor":93.66571428571429,"persen_naik":0.06366104383369432,"up3":"UP3 MERAUKE"},{"no":7,"nama":"ULP TEMINABUAN","rct":154.32130434782607,"hari_kerja":20.869565217391305,"jam_kerja":8.84863354037267,"skor_hari":4.046521739130435,"skor_performa":5,"skor_produktivitas":4.817391304347827,"total_skor":13.863913043478263,"kemarin":86.72608695652174,"persen_skor":92.42608695652174,"persen_naik":0.06167090036692072,"up3":"UP3 SORONG"},{"no":8,"nama":"ULP RANSIKI","rct":206.1142857142857,"hari_kerja":20,"jam_kerja":11.805714285714284,"skor_hari":3.142857142857143,"skor_performa":5,"skor_produktivitas":5,"total_skor":13.142857142857142,"kemarin":83,"persen_skor":87.60000000000001,"persen_naik":0.05251141552511425,"up3":"UP3 MANOKWARI"},{"no":9,"nama":"ULP KAIMANA","rct":133.904,"hari_kerja":20.666666666666668,"jam_kerja":7.876380952380952,"skor_hari":3.733333333333334,"skor_performa":5,"skor_produktivitas":4.386666666666668,"total_skor":13.120000000000001,"kemarin":81.38000000000001,"persen_skor":87.45333333333333,"persen_naik":0.06944656197591086,"up3":"UP3 FAKFAK"},{"no":10,"nama":"ULP WAMENA KOTA","rct":158.941,"hari_kerja":19.9,"jam_kerja":9.44705,"skor_hari":3.1159999999999997,"skor_performa":5,"skor_produktivitas":4.96,"total_skor":13.076,"kemarin":83,"persen_skor":87.17,"persen_naik":0.0478375587931628,"up3":"UP3 WAMENA"},{"no":11,"nama":"ULP WAISAI","rct":140.34285714285713,"hari_kerja":20,"jam_kerja":8.517142857142856,"skor_hari":3.1714285714285713,"skor_performa":5,"skor_produktivitas":4.742857142857143,"total_skor":12.914285714285715,"kemarin":82.24285714285715,"persen_skor":86.08571428571429,"persen_naik":0.04463989379356122,"up3":"UP3 SORONG"},{"no":12,"nama":"ULP MANOKWARI KOTA","rct":178.46958333333336,"hari_kerja":19.5,"jam_kerja":10.423479166666668,"skor_hari":2.715000000000001,"skor_performa":5,"skor_produktivitas":5,"total_skor":12.715000000000002,"kemarin":79.24583333333334,"persen_skor":84.75,"persen_naik":0.06494591937069809,"up3":"UP3 MANOKWARI"},{"no":13,"nama":"ULP SARMI","rct":140.00368421052633,"hari_kerja":19.42105263157895,"jam_kerja":8.868614958448754,"skor_hari":2.7794736842105263,"skor_performa":5,"skor_produktivitas":4.91578947368421,"total_skor":12.695263157894736,"kemarin":79.5,"persen_skor":84.62105263157895,"persen_naik":0.06051747729817142,"up3":"UP3 JAYAPURA"},{"no":14,"nama":"ULP KURIK","rct":150.1525,"hari_kerja":19.4,"jam_kerja":9.402763157894736,"skor_hari":2.6580000000000004,"skor_performa":5,"skor_produktivitas":5,"total_skor":12.658000000000001,"kemarin":81.53,"persen_skor":84.38,"persen_naik":0.033775776250296215,"up3":"UP3 MERAUKE"},{"no":15,"nama":"ULP TANAH MERAH","rct":131.5192857142857,"hari_kerja":19.285714285714285,"jam_kerja":8.422067669172932,"skor_hari":2.5428571428571423,"skor_performa":5,"skor_produktivitas":4.957142857142857,"total_skor":12.5,"kemarin":78.52857142857144,"persen_skor":83.33571428571429,"persen_naik":0.057684066169537924,"up3":"UP3 MERAUKE"},{"no":16,"nama":"ULP YALIMO","rct":219.856,"hari_kerja":19.9,"jam_kerja":12.492799999999999,"skor_hari":3.211,"skor_performa":4.24,"skor_produktivitas":5,"total_skor":12.451,"kemarin":76.88,"persen_skor":83.02000000000001,"persen_naik":0.07395808238978577,"up3":"UP3 WAMENA"},{"no":17,"nama":"ULP WAROPEN","rct":122.10285714285715,"hari_kerja":21.571428571428573,"jam_kerja":7.0501298701298705,"skor_hari":4.571428571428571,"skor_performa":5,"skor_produktivitas":2.8785714285714286,"total_skor":12.45,"kemarin":76.18571428571428,"persen_skor":83,"persen_naik":0.08209982788296044,"up3":"UP3 BIAK"},{"no":18,"nama":"ULP KEPI","rct":124.73375,"hari_kerja":19.5,"jam_kerja":7.7366875,"skor_hari":2.6999999999999997,"skor_performa":5,"skor_produktivitas":4.7,"total_skor":12.399999999999999,"kemarin":76.0875,"persen_skor":82.675,"persen_naik":0.07967946779558502,"up3":"UP3 MERAUKE"},{"no":19,"nama":"ULP SERUI","rct":118.2625,"hari_kerja":21.875,"jam_kerja":6.875568181818182,"skor_hari":4.875,"skor_performa":5,"skor_produktivitas":2.345,"total_skor":12.22,"kemarin":76.575,"persen_skor":81.4875,"persen_naik":0.06028531983433035,"up3":"UP3 BIAK"},{"no":20,"nama":"ULP JAYAPURA","rct":147.66692307692307,"hari_kerja":18.96153846153846,"jam_kerja":9.271943319838055,"skor_hari":2.256923076923078,"skor_performa":5,"skor_produktivitas":4.93076923076923,"total_skor":12.18769230769231,"kemarin":76.03076923076922,"persen_skor":81.23461538461538,"persen_naik":0.06405946688130301,"up3":"UP3 JAYAPURA"},{"no":21,"nama":"ULP WASIOR","rct":140.12875,"hari_kerja":19,"jam_kerja":8.875197368421052,"skor_hari":2.2500000000000004,"skor_performa":5,"skor_produktivitas":4.925,"total_skor":12.175,"kemarin":76.1,"persen_skor":81.15,"persen_naik":0.0622304374614912,"up3":"UP3 NABIRE"},{"no":22,"nama":"ULP NABIRE KOTA","rct":143.2774193548387,"hari_kerja":18.64516129032258,"jam_kerja":9.040916808149406,"skor_hari":2.152903225806452,"skor_performa":5,"skor_produktivitas":4.84516129032258,"total_skor":11.998064516129032,"kemarin":76.11935483870967,"persen_skor":79.98709677419355,"persen_naik":0.04835457331827723,"up3":"UP3 NABIRE"},{"no":23,"nama":"ULP AIMAS","rct":145.56117647058824,"hari_kerja":18.558823529411764,"jam_kerja":9.161114551083593,"skor_hari":2.6970588235294124,"skor_performa":4.8808823529411764,"skor_produktivitas":4.3955882352941185,"total_skor":11.973529411764707,"kemarin":75.5529411764706,"persen_skor":79.81764705882354,"persen_naik":0.053430613899329356,"up3":"UP3 SORONG"},{"no":24,"nama":"ULP ARSO","rct":136.759,"hari_kerja":18.8,"jam_kerja":8.697842105263156,"skor_hari":2.0599999999999996,"skor_performa":5,"skor_produktivitas":4.880000000000001,"total_skor":11.940000000000001,"kemarin":75.27000000000001,"persen_skor":79.6,"persen_naik":0.05439698492462292,"up3":"UP3 JAYAPURA"},{"no":25,"nama":"ULP SORONG KOTA","rct":126.78346153846154,"hari_kerja":19.403846153846153,"jam_kerja":8.172813765182187,"skor_hari":2.600000000000001,"skor_performa":5,"skor_produktivitas":4.338461538461538,"total_skor":11.938461538461539,"kemarin":74.73461538461538,"persen_skor":79.57692307692308,"persen_naik":0.060850652489125266,"up3":"UP3 SORONG"},{"no":26,"nama":"ULP PRAFI","rct":165.99263157894737,"hari_kerja":17.94736842105263,"jam_kerja":10.721812865497077,"skor_hari":1.8368421052631578,"skor_performa":5,"skor_produktivitas":5,"total_skor":11.836842105263159,"kemarin":76.61578947368422,"persen_skor":78.93157894736842,"persen_naik":0.02933920117356798,"up3":"UP3 MANOKWARI"},{"no":27,"nama":"ULP FAKFAK","rct":138.05136363636365,"hari_kerja":19,"jam_kerja":8.765861244019138,"skor_hari":2.3568181818181824,"skor_performa":5,"skor_produktivitas":4.336363636363637,"total_skor":11.69318181818182,"kemarin":74.10000000000001,"persen_skor":77.94545454545454,"persen_naik":0.04933519944016775,"up3":"UP3 FAKFAK"},{"no":28,"nama":"ULP BINTUNI","rct":148.165,"hari_kerja":18,"jam_kerja":9.731388888888889,"skor_hari":1.6775000000000002,"skor_performa":5,"skor_produktivitas":5,"total_skor":11.6775,"kemarin":75.075,"persen_skor":77.85,"persen_naik":0.03564547206165693,"up3":"UP3 MANOKWARI"},{"no":29,"nama":"ULP ABEPURA","rct":157.9453125,"hari_kerja":19.3125,"jam_kerja":9.812911184210526,"skor_hari":2.5712500000000005,"skor_performa":4.29375,"skor_produktivitas":4.812500000000001,"total_skor":11.677500000000002,"kemarin":70.396875,"persen_skor":77.846875,"persen_naik":0.0957006944723215,"up3":"UP3 JAYAPURA"},{"no":30,"nama":"ULP SENTANI","rct":161.1375,"hari_kerja":18.8,"jam_kerja":9.980921052631578,"skor_hari":2.0860000000000007,"skor_performa":4.904999999999999,"skor_produktivitas":4.609999999999999,"total_skor":11.600999999999999,"kemarin":71.76,"persen_skor":77.325,"persen_naik":0.07196896217264788,"up3":"UP3 JAYAPURA"},{"no":31,"nama":"ULP GENYEM","rct":116.41176470588235,"hari_kerja":20.941176470588236,"jam_kerja":7.043417366946779,"skor_hari":4.0329411764705885,"skor_performa":5,"skor_produktivitas":2.5641176470588234,"total_skor":11.597058823529412,"kemarin":71.20588235294117,"persen_skor":77.31764705882354,"persen_naik":0.07904747413268426,"up3":"UP3 JAYAPURA"},{"no":32,"nama":"ULP KUPRIK","rct":126.7104,"hari_kerja":17.28,"jam_kerja":8.953552941176472,"skor_hari":1.22,"skor_performa":5,"skor_produktivitas":5,"total_skor":11.219999999999999,"kemarin":73.324,"persen_skor":74.824,"persen_naik":0.020047043729284723,"up3":"UP3 MERAUKE"},{"no":33,"nama":"ULP ENAROTALI","rct":130.97454545454545,"hari_kerja":17.5,"jam_kerja":8.776363636363637,"skor_hari":2.228636363636364,"skor_performa":4.632272727272727,"skor_produktivitas":4.345454545454545,"total_skor":11.206363636363637,"kemarin":69.94090909090909,"persen_skor":74.69545454545454,"persen_naik":0.06365240674253023,"up3":"UP3 NABIRE"}],"up3":[{"no":1,"nama":"UP3 TIMIKA","rct":174.15977272727272,"hari_kerja":22.068181818181817,"jam_kerja":9.416353305785123,"skor_hari":4.9772727272727275,"skor_performa":5,"skor_produktivitas":4.963636363636363,"total_skor":14.94090909090909,"kemarin":93.3659090909091,"persen_skor":99.60454545454546,"persen_naik":0.0626340528453429,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":2,"nama":"UP3 SOFIFI","rct":207.96881355932203,"hari_kerja":20.864406779661017,"jam_kerja":11.403276836158192,"skor_hari":4.003220338983051,"skor_performa":5,"skor_produktivitas":5,"total_skor":14.003220338983052,"kemarin":87.79152542372881,"persen_skor":93.35084745762711,"persen_naik":0.05955298945113197,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":3,"nama":"UP3 KUPANG","rct":215.46744966442955,"hari_kerja":20.78187919463087,"jam_kerja":11.760354745925216,"skor_hari":3.8841610738255086,"skor_performa":4.981208053691275,"skor_produktivitas":4.984563758389262,"total_skor":13.849932885906046,"kemarin":86.41375838926174,"persen_skor":92.32080536912751,"persen_naik":0.06398391951031561,"wilayah":"WILAYAH NUSA TENGGARA TIMUR"},{"no":4,"nama":"UP3 BIAK","rct":145.66150000000002,"hari_kerja":21.616666666666667,"jam_kerja":8.120977272727274,"skor_hari":4.626666666666666,"skor_performa":5,"skor_produktivitas":4.155166666666667,"total_skor":13.781833333333331,"kemarin":85.485,"persen_skor":91.87666666666668,"persen_naik":0.0695678989950297,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":5,"nama":"UP3 BIMA","rct":231.38697674418603,"hari_kerja":20.689922480620154,"jam_kerja":12.518427464008859,"skor_hari":3.7844961240310044,"skor_performa":4.995348837209302,"skor_produktivitas":4.992248062015504,"total_skor":13.77209302325581,"kemarin":86.39612403100776,"persen_skor":91.80155038759689,"persen_naik":0.05888164561237571,"wilayah":"WILAYAH NUSA TENGGARA BARAT"},{"no":6,"nama":"UP3 FLORES BAGIAN BARAT","rct":244.55951351351354,"hari_kerja":20.54054054054054,"jam_kerja":13.14569111969112,"skor_hari":3.7205945945945937,"skor_performa":4.957945945945946,"skor_produktivitas":5,"total_skor":13.67854054054054,"kemarin":85.3908108108108,"persen_skor":91.17945945945947,"persen_naik":0.06348632337771677,"wilayah":"WILAYAH NUSA TENGGARA TIMUR"},{"no":7,"nama":"UP3 MASOHI","rct":215.37555555555556,"hari_kerja":20.458333333333332,"jam_kerja":12.268777777777778,"skor_hari":3.6080555555555542,"skor_performa":5,"skor_produktivitas":5,"total_skor":13.608055555555554,"kemarin":85.85833333333333,"persen_skor":90.70694444444445,"persen_naik":0.05345358220153425,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":8,"nama":"UP3 SUMBA","rct":170.12420289855072,"hari_kerja":20.768115942028984,"jam_kerja":9.601152518978605,"skor_hari":3.8846376811594188,"skor_performa":4.959420289855072,"skor_produktivitas":4.689855072463769,"total_skor":13.533913043478261,"kemarin":83.60724637681159,"persen_skor":90.21884057971015,"persen_naik":0.07328396330982644,"wilayah":"WILAYAH NUSA TENGGARA TIMUR"},{"no":9,"nama":"UP3 TERNATE","rct":219.25876712328767,"hari_kerja":19.89041095890411,"jam_kerja":12.462938356164383,"skor_hari":3.2858904109589036,"skor_performa":4.947123287671233,"skor_produktivitas":4.9671232876712335,"total_skor":13.20013698630137,"kemarin":82.86575342465753,"persen_skor":87.9904109589041,"persen_naik":0.05824109102797633,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":10,"nama":"UP3 AMBON","rct":172.63458598726115,"hari_kerja":19.611464968152866,"jam_kerja":10.131729299363057,"skor_hari":3.3663694267515916,"skor_performa":4.718025477707008,"skor_produktivitas":4.833248407643311,"total_skor":12.917643312101912,"kemarin":81.47070063694267,"persen_skor":86.11210191082803,"persen_naik":0.05389952365454615,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":11,"nama":"UP3 WAMENA","rct":189.39849999999998,"hari_kerja":19.9,"jam_kerja":10.969925,"skor_hari":3.1635,"skor_performa":4.62,"skor_produktivitas":4.9799999999999995,"total_skor":12.7635,"kemarin":79.94,"persen_skor":85.095,"persen_naik":0.060579352488395334,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":12,"nama":"UP3 MERAUKE","rct":148.66480392156862,"hari_kerja":19.42156862745098,"jam_kerja":9.324463364293084,"skor_hari":2.77705882352941,"skor_performa":5,"skor_produktivitas":4.964705882352942,"total_skor":12.741764705882353,"kemarin":80.79803921568627,"persen_skor":84.94705882352942,"persen_naik":0.04884241626849487,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":13,"nama":"UP3 KOTAMOBAGU","rct":188.65432098765433,"hari_kerja":19.160493827160494,"jam_kerja":11.429174788823913,"skor_hari":3.066049382716049,"skor_performa":4.78,"skor_produktivitas":4.861234567901234,"total_skor":12.707283950617285,"kemarin":80.2679012345679,"persen_skor":84.71111111111111,"persen_naik":0.0524513233065174,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":14,"nama":"UP3 SORONG","rct":138.56560344827588,"hari_kerja":19.482758620689655,"jam_kerja":8.792926497277678,"skor_hari":2.949741379310342,"skor_performa":4.965086206896552,"skor_produktivitas":4.474568965517241,"total_skor":12.389396551724134,"kemarin":77.8051724137931,"persen_skor":82.58793103448276,"persen_naik":0.057911108327592414,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":15,"nama":"UP3 SAUMLAKI","rct":140.233125,"hari_kerja":19.1875,"jam_kerja":8.880690789473684,"skor_hari":2.6581250000000005,"skor_performa":5,"skor_produktivitas":4.725,"total_skor":12.383125,"kemarin":78.725,"persen_skor":82.55,"persen_naik":0.046335554209569994,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":16,"nama":"UP3 MANOKWARI","rct":169.48909090909092,"hari_kerja":18.863636363636363,"jam_kerja":10.420478468899523,"skor_hari":2.3254545454545457,"skor_performa":5,"skor_produktivitas":4.99090909090909,"total_skor":12.316363636363636,"kemarin":78,"persen_skor":82.10454545454544,"persen_naik":0.04999169573160593,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":17,"nama":"UP3 TUAL","rct":159.73415094339623,"hari_kerja":19,"jam_kerja":9.907060575968222,"skor_hari":2.482264150943397,"skor_performa":4.952830188679245,"skor_produktivitas":4.875471698113207,"total_skor":12.31056603773585,"kemarin":77.97358490566039,"persen_skor":82.06415094339621,"persen_naik":0.049845955764013156,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":18,"nama":"UP3 FLORES BAGIAN TIMUR","rct":195.16855855855854,"hari_kerja":19.243243243243242,"jam_kerja":11.772029397818871,"skor_hari":2.9998198198198174,"skor_performa":4.306756756756756,"skor_produktivitas":4.98018018018018,"total_skor":12.286756756756752,"kemarin":76.9091743119266,"persen_skor":81.9036036036036,"persen_naik":0.06097935953891592,"wilayah":"WILAYAH NUSA TENGGARA TIMUR"},{"no":19,"nama":"UP3 FAKFAK","rct":136.36999999999998,"hari_kerja":19.675675675675677,"jam_kerja":8.318499999999998,"skor_hari":2.914864864864866,"skor_performa":5,"skor_produktivitas":4.356756756756756,"total_skor":12.271621621621621,"kemarin":77.05135135135136,"persen_skor":81.8,"persen_naik":0.058051939470032274,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":20,"nama":"UP3 TOBELO","rct":165.23210526315788,"hari_kerja":18.07894736842105,"jam_kerja":10.679561403508771,"skor_hari":2.4115789473684215,"skor_performa":5,"skor_produktivitas":4.715789473684211,"total_skor":12.127368421052633,"kemarin":77.97105263157896,"persen_skor":80.84210526315789,"persen_naik":0.0355143229166665,"wilayah":"WILAYAH MALUKU DAN MALUKU UTARA"},{"no":21,"nama":"UP3 SUMBAWA","rct":167.89040322580644,"hari_kerja":18.096774193548388,"jam_kerja":10.827244623655913,"skor_hari":2.0787096774193543,"skor_performa":4.920887096774193,"skor_produktivitas":4.946854838709678,"total_skor":11.946451612903225,"kemarin":76.57096774193548,"persen_skor":79.6491935483871,"persen_naik":0.03864729408191178,"wilayah":"WILAYAH NUSA TENGGARA BARAT"},{"no":22,"nama":"UP3 JAYAPURA","rct":146.15322580645162,"hari_kerja":19.35483870967742,"jam_kerja":9.192275042444823,"skor_hari":2.618145161290318,"skor_performa":4.802419354838709,"skor_produktivitas":4.517661290322581,"total_skor":11.938225806451609,"kemarin":73.69677419354838,"persen_skor":79.57983870967742,"persen_naik":0.07392656998956221,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":23,"nama":"UP3 GORONTALO","rct":164.99041379310344,"hari_kerja":19.420689655172414,"jam_kerja":10.183705989110708,"skor_hari":3.0698620689655134,"skor_performa":3.969172413793104,"skor_produktivitas":4.8537241379310325,"total_skor":11.892758620689651,"kemarin":74.07310344827586,"persen_skor":79.28068965517242,"persen_naik":0.06568543020433742,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":24,"nama":"UP3 MATARAM","rct":176.59525,"hari_kerja":18.041666666666668,"jam_kerja":11.310847222222222,"skor_hari":1.9609166666666658,"skor_performa":4.816,"skor_produktivitas":4.953333333333334,"total_skor":11.73025,"kemarin":74.3375,"persen_skor":78.20166666666667,"persen_naik":0.049412842863536525,"wilayah":"WILAYAH NUSA TENGGARA BARAT"},{"no":25,"nama":"UP3 NABIRE","rct":138.17056603773585,"hari_kerja":18.169811320754718,"jam_kerja":9.176142557651993,"skor_hari":2.1843396226415095,"skor_performa":4.847358490566038,"skor_produktivitas":4.637735849056604,"total_skor":11.66943396226415,"kemarin":73.55471698113207,"persen_skor":77.79056603773584,"persen_naik":0.054451963423803575,"wilayah":"WILAYAH PAPUA DAN PAPUA BARAT"},{"no":26,"nama":"UP3 SELAPARANG","rct":173.42583333333334,"hari_kerja":18.28125,"jam_kerja":11.13476851851852,"skor_hari":2.0696875,"skor_performa":4.353958333333336,"skor_produktivitas":4.964583333333334,"total_skor":11.388229166666669,"kemarin":73.06041666666667,"persen_skor":75.93854166666667,"persen_naik":0.03790071466783717,"wilayah":"WILAYAH NUSA TENGGARA BARAT"},{"no":27,"nama":"UP3 MAKASSAR UTARA","rct":171.74227722772278,"hari_kerja":17.534653465346533,"jam_kerja":11.041237623762377,"skor_hari":1.6483168316831682,"skor_performa":4.798019801980198,"skor_produktivitas":4.928712871287129,"total_skor":11.375049504950494,"kemarin":73.1029702970297,"persen_skor":75.83267326732674,"persen_naik":0.035996396443446495,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":28,"nama":"UP3 BULUKUMBA","rct":166.05768041237113,"hari_kerja":17.278350515463917,"jam_kerja":11.268098847786536,"skor_hari":1.7899484536082457,"skor_performa":4.928350515463918,"skor_produktivitas":4.592680412371133,"total_skor":11.310979381443296,"kemarin":72.8659793814433,"persen_skor":75.41030927835051,"persen_naik":0.03373981516924589,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":29,"nama":"UP3 BAUBAU","rct":154.35016483516483,"hari_kerja":17.65934065934066,"jam_kerja":10.075009157509157,"skor_hari":1.9026373626373618,"skor_performa":4.55120879120879,"skor_produktivitas":4.684340659340659,"total_skor":11.138186813186811,"kemarin":70.34725274725275,"persen_skor":74.26153846153846,"persen_naik":0.052709461659119786,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":30,"nama":"UP3 MANADO","rct":261.44820408163264,"hari_kerja":18.60408163265306,"jam_kerja":15.260431793770138,"skor_hari":2.333836734693877,"skor_performa":3.736122448979591,"skor_produktivitas":4.90934693877551,"total_skor":10.979306122448978,"kemarin":68.73346938775511,"persen_skor":73.2004081632653,"persen_naik":0.06102341349719227,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":31,"nama":"UP3 PINRANG","rct":173.3304964539007,"hari_kerja":16.75886524822695,"jam_kerja":11.695911556111806,"skor_hari":1.479361702127658,"skor_performa":4.6107092198581565,"skor_produktivitas":4.8808510638297875,"total_skor":10.970921985815602,"kemarin":71.17092198581561,"persen_skor":73.15673758865249,"persen_naik":0.02714467140405813,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":32,"nama":"UP3 MAMUJU","rct":134.88577689243027,"hari_kerja":17.02788844621514,"jam_kerja":9.434457464260603,"skor_hari":1.6018326693227085,"skor_performa":4.496932270916335,"skor_produktivitas":4.793625498007967,"total_skor":10.89239043824701,"kemarin":69.37051792828686,"persen_skor":72.62430278884463,"persen_naik":0.04480297552760212,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":33,"nama":"UP3 KENDARI","rct":151.19514423076924,"hari_kerja":16.846153846153847,"jam_kerja":10.393832013574661,"skor_hari":1.723509615384614,"skor_performa":4.481682692307691,"skor_produktivitas":4.561538461538462,"total_skor":10.766730769230769,"kemarin":68.61586538461539,"persen_skor":71.78846153846153,"persen_naik":0.04419367800696476,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":34,"nama":"UP3 WATAMPONE","rct":135.8347159090909,"hari_kerja":15.710227272727273,"jam_kerja":9.989669744318181,"skor_hari":1.5798295454545461,"skor_performa":4.143579545454544,"skor_produktivitas":4.59284090909091,"total_skor":10.31625,"kemarin":66.13522727272726,"persen_skor":68.77897727272727,"persen_naik":0.03843834416898679,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":35,"nama":"UP3 TOLITOLI","rct":104.61564356435643,"hari_kerja":16.425742574257427,"jam_kerja":8.038477722772278,"skor_hari":1.101782178217821,"skor_performa":4.935148514851485,"skor_produktivitas":4.082277227722773,"total_skor":10.119207920792078,"kemarin":67.02871287128713,"persen_skor":67.47722772277227,"persen_naik":0.006646906913956958,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":36,"nama":"UP3 PARE PARE","rct":113.93433121019108,"hari_kerja":16.636942675159236,"jam_kerja":8.202019482952416,"skor_hari":1.1772611464968155,"skor_performa":4.364012738853503,"skor_produktivitas":4.163949044585988,"total_skor":9.705222929936305,"kemarin":62.640127388535035,"persen_skor":64.71528662420381,"persen_naik":0.032065982303671955,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":37,"nama":"UP3 PALOPO","rct":123.20787439613527,"hari_kerja":15.352657004830919,"jam_kerja":9.713858293075685,"skor_hari":1.1432850241545889,"skor_performa":3.651642512077295,"skor_produktivitas":4.524830917874397,"total_skor":9.319758454106282,"kemarin":59.86135265700483,"persen_skor":62.13381642512078,"persen_naik":0.03657370332071197,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":38,"nama":"UP3 MAKASSAR SELATAN","rct":124.17269503546098,"hari_kerja":16.070921985815602,"jam_kerja":9.260793439716311,"skor_hari":1.35468085106383,"skor_performa":3.448794326241134,"skor_produktivitas":4.219858156028369,"total_skor":9.023333333333333,"kemarin":57.68156028368794,"persen_skor":60.16170212765957,"persen_naik":0.0412245956523788,"wilayah":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT"},{"no":39,"nama":"UP3 TAHUNA","rct":99.92139999999999,"hari_kerja":15.56,"jam_kerja":7.7450874999999995,"skor_hari":2.2019000000000006,"skor_performa":3.4440000000000004,"skor_produktivitas":2.5476,"total_skor":8.1935,"kemarin":51.173,"persen_skor":54.623000000000005,"persen_naik":0.06316020723870902,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":40,"nama":"UP3 PALU","rct":82.18107142857143,"hari_kerja":14.014285714285714,"jam_kerja":7.370076530612245,"skor_hari":1.545142857142857,"skor_performa":2.6395000000000004,"skor_produktivitas":2.3642857142857125,"total_skor":6.54892857142857,"kemarin":41.17,"persen_skor":43.660714285714285,"persen_naik":0.057047034764826116,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"},{"no":41,"nama":"UP3 LUWUK","rct":47.086608695652174,"hari_kerja":9.42608695652174,"jam_kerja":6.731845410628019,"skor_hari":0.7190434782608697,"skor_performa":1.5727826086956527,"skor_produktivitas":2.124434782608696,"total_skor":4.416260869565218,"kemarin":28.57913043478261,"persen_skor":29.442608695652176,"persen_naik":0.029327505242328526,"wilayah":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO"}],"wilayah":[{"no":1,"nama":"WILAYAH NUSA TENGGARA TIMUR","rct":215.46770739064857,"hari_kerja":20.45550527903469,"jam_kerja":12.273385369532429,"skor_hari":3.6905128205128213,"skor_performa":4.859532428355957,"skor_produktivitas":4.9574660633484156,"total_skor":13.507511312217193,"kemarin":84.26717095310136,"persen_skor":90.03951734539969,"persen_naik":0.06850053617571798},{"no":2,"nama":"WILAYAH MALUKU DAN MALUKU UTARA","rct":187.76747863247863,"hari_kerja":19.735042735042736,"jam_kerja":10.888373931623931,"skor_hari":3.2694230769230863,"skor_performa":4.891816239316238,"skor_produktivitas":4.892350427350429,"total_skor":13.053589743589754,"kemarin":82.3861111111111,"persen_skor":87.01645299145298,"persen_naik":0.05620294267922299},{"no":3,"nama":"WILAYAH PAPUA DAN PAPUA BARAT","rct":149.6882958199357,"hari_kerja":19.683279742765272,"jam_kerja":8.984414790996784,"skor_hari":3.0338424437299216,"skor_performa":4.92887459807074,"skor_produktivitas":4.645257234726686,"total_skor":12.607974276527347,"kemarin":79.0008038585209,"persen_skor":84.04855305466238,"persen_naik":0.0638949092870153},{"no":4,"nama":"WILAYAH NUSA TENGGARA BARAT","rct":188.71565031982942,"hari_kerja":18.83368869936034,"jam_kerja":11.432402648412074,"skor_hari":2.5159061833688767,"skor_performa":4.798486140724946,"skor_produktivitas":4.964626865671642,"total_skor":12.279019189765464,"kemarin":77.98336886993603,"persen_skor":81.86183368869935,"persen_naik":0.04973451230648919},{"no":5,"nama":"WILAYAH SULAWESI SELATAN, TENGGARA DAN BARAT","rct":143.46097269624573,"hari_kerja":16.66609783845279,"jam_kerja":9.938880746837985,"skor_hari":1.547042093287828,"skor_performa":4.343936291240041,"skor_produktivitas":4.593430034129694,"total_skor":10.484408418657564,"kemarin":67.1447667804323,"persen_skor":69.9032992036405,"persen_naik":0.04108335698340829},{"no":6,"nama":"WILAYAH SULAWESI UTARA,TENGAH DAN GORONTALO","rct":151.82098166127292,"hari_kerja":16.382955771305287,"jam_kerja":10.988811353829558,"skor_hari":2.0450377562028175,"skor_performa":3.528921251348437,"skor_produktivitas":3.8217044228694736,"total_skor":9.395663430420727,"kemarin":59.35231930960086,"persen_skor":62.640021574973034,"persen_naik":0.05539298722637036}],"petugas":[{"nama":"YULIANUS RUMFAKER","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP AGATS","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":174.77},{"nama":"CANDRA SILITONGA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP NABIRE KOTA","persen_skor":70.7,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":3.4,"total_skor":10.6,"hari_realisasi":19,"hari_seharusnya":22,"rct":111.32},{"nama":"ARIANTO ARIANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP JAYAPURA","persen_skor":77.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":4.4,"total_skor":11.6,"hari_realisasi":19,"hari_seharusnya":22,"rct":118.4},{"nama":"YUSUF ANDERSON NDUN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KURIK","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":162.74},{"nama":"YOHANES MAMBEFOR FAIRYO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP BIAK KOTA","persen_skor":92.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":3.8,"total_skor":13.8,"hari_realisasi":22,"hari_seharusnya":22,"rct":131.79},{"nama":"PETRIX SAIRMALY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP AIMAS","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":160.58},{"nama":"ALFA SROYER","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP YUMDORI","persen_skor":77.3,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":1.6,"total_skor":11.6,"hari_realisasi":22,"hari_seharusnya":22,"rct":112.86},{"nama":"SALOMO ADADIKAM","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP YUMDORI","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":178.51},{"nama":"FEBRIAN YUDISTIRA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP MERAUKE KOTA","persen_skor":76.0,"skor_hari":1.4,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":11.4,"hari_realisasi":18,"hari_seharusnya":22,"rct":118.57},{"nama":"WARTO WARTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP GENYEM","persen_skor":88.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":3.2,"total_skor":13.2,"hari_realisasi":22,"hari_seharusnya":22,"rct":127.67},{"nama":"FHABIANUS BALFID","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":136.77},{"nama":"ALDI ALFIAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP TIMIKA KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":183.25},{"nama":"LABIA MULAIT","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 WAMENA","ulp":"ULP WAMENA KOTA","persen_skor":78.7,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":4.6,"total_skor":11.8,"hari_realisasi":19,"hari_seharusnya":22,"rct":121.18},{"nama":"SUGIONO SUGIONO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":137.41},{"nama":"MATHIAS ARNOL KOIBUR","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":76.0,"skor_hari":1.4,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":11.4,"hari_realisasi":18,"hari_seharusnya":22,"rct":145.52},{"nama":"NORBERTUS DERIN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP TANAH MERAH","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":132.48},{"nama":"SAPARMAN SAPARMAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP JAYAPURA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":162.94},{"nama":"YOSEPH LETSOIN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP TANAH MERAH","persen_skor":86.7,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":4.8,"total_skor":13.0,"hari_realisasi":20,"hari_seharusnya":22,"rct":128.82},{"nama":"AHMAD HIDAYAT","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP PRAFI","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":183.52},{"nama":"OGY GIANTARA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP MANOKWARI KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":156.71},{"nama":"LEONARDO LUBIS","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP TEMINABUAN","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":172.76},{"nama":"YULIUS YAMBE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP GENYEM","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":147.99},{"nama":"SYABIL FUAD SIREGAR","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP MERAUKE KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":158.37},{"nama":"FARIZ ROZI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP PRAFI","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":159.43},{"nama":"AMIN RAHMAD","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP AIMAS","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":155.06},{"nama":"VIKTOR RUMBEKWAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP ARSO","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":154.85},{"nama":"OBBY PANIONDE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":136.77},{"nama":"SONY PULUNG","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP YUMDORI","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":187.9},{"nama":"STEVEN WAMEA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP SERUI","persen_skor":85.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":3.8,"total_skor":12.8,"hari_realisasi":21,"hari_seharusnya":22,"rct":125.6},{"nama":"DOLFRIGO MANALU","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP MANOKWARI KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":170.9},{"nama":"MUH UMABAIHI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 FAKFAK","ulp":"ULP KAIMANA","persen_skor":84.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":4.4,"total_skor":12.6,"hari_realisasi":20,"hari_seharusnya":22,"rct":125.38},{"nama":"HERMANTO HERMANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP MERAUKE KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":174.46},{"nama":"AWALUDIN FADILAH MISMANTORO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KURIK","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":154.37},{"nama":"YULIANUS GOO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP ENAROTALI","persen_skor":38.8,"skor_hari":0.63,"skor_performa":2.8,"skor_produktivitas":2.4,"total_skor":5.83,"hari_realisasi":11,"hari_seharusnya":22,"rct":60.37},{"nama":"RAHMAN RAHMAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP TIMIKA KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":23,"hari_seharusnya":22,"rct":159.27},{"nama":"DHEA RIZKY KURNIAWAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":126.64},{"nama":"SYAMSIR SYAMSIR","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP ABEPURA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":152.45},{"nama":"KAROL AITAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP AGATS","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":183.64},{"nama":"ARMAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP BIAK KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":158.07},{"nama":"MUHAMMAD SAIFUL","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SARMI","persen_skor":80.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":3.8,"total_skor":12.0,"hari_realisasi":20,"hari_seharusnya":22,"rct":120.78},{"nama":"GILANG HARMANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP PRAFI","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":201.68},{"nama":"MISTRO PAIS","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP JAYAPURA","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":127.67},{"nama":"PIDELES AGAPA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP ENAROTALI","persen_skor":60.3,"skor_hari":0.85,"skor_performa":5.0,"skor_produktivitas":3.2,"total_skor":9.05,"hari_realisasi":15,"hari_seharusnya":22,"rct":87.17},{"nama":"MOHAMMADDALI IDI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP AGATS","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":179.92},{"nama":"LASARUS TUANUBUN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 FAKFAK","ulp":"ULP KAIMANA","persen_skor":80.0,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":3.0,"total_skor":12.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":119.47},{"nama":"SUWONDO SUWONDO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP PRAFI","persen_skor":72.8,"skor_hari":0.91,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.91,"hari_realisasi":16,"hari_seharusnya":22,"rct":115.14},{"nama":"JHONI FARNEUBUN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP NABIRE KOTA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":153.0},{"nama":"ANGGA SAPUTRA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 WAMENA","ulp":"ULP WAMENA KOTA","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":144.51},{"nama":"ALAN IMANUEL LUMBAA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":112.75},{"nama":"SOLIKIN SOLIKIN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KURIK","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":149.14},{"nama":"THERA MAYOR","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP WAISAI","persen_skor":84.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":4.4,"total_skor":12.6,"hari_realisasi":20,"hari_seharusnya":22,"rct":124.94},{"nama":"HENDRYK HENDRYK","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SENTANI","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":166.45},{"nama":"MARSELINO WAKUM","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP NABIRE KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":147.94},{"nama":"SUJAYANTO SUJAYANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":137.41},{"nama":"IQBAL BODENG","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 WAMENA","ulp":"ULP YALIMO","persen_skor":72.8,"skor_hari":0.91,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.91,"hari_realisasi":16,"hari_seharusnya":22,"rct":201.82},{"nama":"FRITS REPASSI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP ABEPURA","persen_skor":83.3,"skor_hari":3.2,"skor_performa":4.3,"skor_produktivitas":5.0,"total_skor":12.5,"hari_realisasi":20,"hari_seharusnya":22,"rct":132.96},{"nama":"HADI PURWANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":112.75},{"nama":"HASIM WALERUBUN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP ENAROTALI","persen_skor":71.6,"skor_hari":0.74,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.74,"hari_realisasi":13,"hari_seharusnya":22,"rct":141.8},{"nama":"MARSELLIO RESUSUBUN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":136.14},{"nama":"ONISIMUS MANSUMBER","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP YUMDORI","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":175.03},{"nama":"MORA OGUNG SORMIN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP MERAUKE KOTA","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":232.17},{"nama":"IRMAWAN NAHUMARURI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":125.7},{"nama":"GILLANG MOFU","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP NABIRE KOTA","persen_skor":76.0,"skor_hari":1.4,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":11.4,"hari_realisasi":18,"hari_seharusnya":22,"rct":147.25},{"nama":"MULDI MANI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP TIMIKA KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":186.87},{"nama":"CANDRA KRISFIANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SENTANI","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":206.7},{"nama":"ABUJAIS RUMBARU","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP JAYAPURA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":123.44},{"nama":"SURYADI SURYADI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KEPI","persen_skor":80.0,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":4.8,"total_skor":12.0,"hari_realisasi":19,"hari_seharusnya":22,"rct":122.53},{"nama":"VICTOR HITYAHUBESSY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":77.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":4.4,"total_skor":11.6,"hari_realisasi":19,"hari_seharusnya":22,"rct":119.04},{"nama":"MATHIAS BULOHROY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 FAKFAK","ulp":"ULP KAIMANA","persen_skor":92.0,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":4.8,"total_skor":13.8,"hari_realisasi":21,"hari_seharusnya":22,"rct":134.24},{"nama":"ARIF HIDAYATULLAH","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KEPI","persen_skor":85.3,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":4.6,"total_skor":12.8,"hari_realisasi":20,"hari_seharusnya":22,"rct":127.52},{"nama":"YUHEN LOOY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":69.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":3.2,"total_skor":10.4,"hari_realisasi":19,"hari_seharusnya":22,"rct":110.52},{"nama":"FREDDERICK PANJAITAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":76.0,"skor_hari":1.4,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":11.4,"hari_realisasi":18,"hari_seharusnya":22,"rct":118.5},{"nama":"RIZAL RUMALOLAS","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 TIMIKA","ulp":"ULP TIMIKA KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":173.43},{"nama":"MIHEL IBO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SENTANI","persen_skor":69.8,"skor_hari":0.96,"skor_performa":4.5,"skor_produktivitas":5.0,"total_skor":10.46,"hari_realisasi":17,"hari_seharusnya":22,"rct":151.47},{"nama":"APOLONARIUS LOKOBAL","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP ENAROTALI","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":179.42},{"nama":"AGIL PRASTY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":135.69},{"nama":"JON PARIRIE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP MANOKWARI KOTA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":165.8},{"nama":"YUSUF ROSE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP MANOKWARI KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":242.04},{"nama":"ALFIN SANADI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":127.78},{"nama":"JHON SAPARI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP ABEPURA","persen_skor":79.3,"skor_hari":3.2,"skor_performa":3.7,"skor_produktivitas":5.0,"total_skor":11.9,"hari_realisasi":20,"hari_seharusnya":22,"rct":192.8},{"nama":"BERTHO RUMERE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP MANOKWARI KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":164.93},{"nama":"ASUDIN FATARUBA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 NABIRE","ulp":"ULP ENAROTALI","persen_skor":74.7,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":3.0,"total_skor":11.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":113.61},{"nama":"KEVIN HUTAPEA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 WAMENA","ulp":"ULP YALIMO","persen_skor":76.0,"skor_hari":1.4,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":11.4,"hari_realisasi":18,"hari_seharusnya":22,"rct":224.06},{"nama":"YOSEPH TUROTH","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP AIMAS","persen_skor":72.0,"skor_hari":0.8,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.8,"hari_realisasi":14,"hari_seharusnya":22,"rct":119.35},{"nama":"HAIRUL ADAM","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":155.16},{"nama":"SAAT SAAT","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP KUPRIK","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":112.75},{"nama":"SAHRUL RAMADHAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MERAUKE","ulp":"ULP MERAUKE KOTA","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":151.73},{"nama":"HENDRI PURWANTO","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP AIMAS","persen_skor":71.6,"skor_hari":0.74,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.74,"hari_realisasi":13,"hari_seharusnya":22,"rct":132.43},{"nama":"GERSON MAAI","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":80.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":3.8,"total_skor":12.0,"hari_realisasi":20,"hari_seharusnya":22,"rct":120.26},{"nama":"ISAK DEGEY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP JAYAPURA","persen_skor":73.1,"skor_hari":0.96,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":10.96,"hari_realisasi":17,"hari_seharusnya":22,"rct":133.4},{"nama":"CALVIN YAMLEAN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 FAKFAK","ulp":"ULP FAKFAK","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":126.59},{"nama":"ANDHIKA BELLA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SENTANI","persen_skor":88.0,"skor_hari":3.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":13.2,"hari_realisasi":20,"hari_seharusnya":22,"rct":169.67},{"nama":"ABEL BOGUM","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 WAMENA","ulp":"ULP YALIMO","persen_skor":76.7,"skor_hari":4.0,"skor_performa":2.5,"skor_produktivitas":5.0,"total_skor":11.5,"hari_realisasi":21,"hari_seharusnya":22,"rct":283.91},{"nama":"ROY LITAMAHUPUTTY","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP SORONG KOTA","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":127.78},{"nama":"SYAIFUL ARIFIN","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP ABEPURA","persen_skor":93.3,"skor_hari":4.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":14.0,"hari_realisasi":21,"hari_seharusnya":22,"rct":140.71},{"nama":"YOBA PATULAK","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 JAYAPURA","ulp":"ULP SENTANI","persen_skor":64.0,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":2.4,"total_skor":9.6,"hari_realisasi":19,"hari_seharusnya":22,"rct":103.34},{"nama":"SANDI LOLOBUNGA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 MANOKWARI","ulp":"ULP BINTUNI","persen_skor":81.3,"skor_hari":2.2,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":12.2,"hari_realisasi":19,"hari_seharusnya":22,"rct":150.35},{"nama":"ABRIAN RIRINE","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 SORONG","ulp":"ULP AIMAS","persen_skor":100.0,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":5.0,"total_skor":15.0,"hari_realisasi":22,"hari_seharusnya":22,"rct":273.8},{"nama":"HARDI WONA","dist":"WILAYAH PAPUA DAN PAPUA BARAT","area":"UP3 BIAK","ulp":"ULP SERUI","persen_skor":74.7,"skor_hari":5.0,"skor_performa":5.0,"skor_produktivitas":1.2,"total_skor":11.2,"hari_realisasi":22,"hari_seharusnya":22,"rct":109.21}]};
-// ---- Baris mentah DATABASE (akan digantikan hasil tarikan live jika sinkron aktif) ----
-let RAW = FALLBACK.petugas.map(p=>Object.assign({},p));
-
 const SHEET_ID = "1myS7rJmBwJMinYj_XJNy-ZS6q0c3NtbknLVea7WpwFc";
 const SHEET_GID = "1833775340";
-let autoSyncOn = false;
+const SHEET_EDIT_URL = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/edit?gid="+SHEET_GID;
+
+let RAW = [];         // seluruh baris mentah petugas dari database live
+let autoSyncOn = true;
 let syncTimer = null;
-let lastSyncAt = null;
 
 function setStatus(text, cls){
   const el = document.getElementById('syncStatus');
-  el.textContent = text;
-  el.className = 'sync-status ' + (cls||'');
+  el.textContent = text; el.className = 'sync-status ' + (cls||'');
 }
-
-function explainSync(){
+function explainSync(extra){
   document.getElementById('syncExplain').innerHTML =
-    '<b>Tentang sinkronisasi:</b> Dashboard ini dirancang untuk mengambil baris mentah dari tab <b>DATABASE</b> pada spreadsheet sumber '+
-    '(<a href="https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit?gid='+SHEET_GID+'" target="_blank" rel="noopener">buka spreadsheet</a>) lalu menghitung ulang seluruh level '+
-    '(Nama Dist → Nama Area → Nama Ulp → Petugas) memakai rumus yang sama seperti pivot Excel acuan (rata-rata RCT, Skor Hari Kerja/Performa/Produktivitas, Total Skor = jumlah ketiganya, Persentase Skor = Total Skor ÷ 15 × 100).<br><br>'+
-    'Kendala teknis saat ini: halaman artefak yang dipublikasikan Claude tidak diizinkan melakukan koneksi jaringan langsung ke domain luar (termasuk Google Sheets) — ini kebijakan keamanan platform, bukan batasan kode. Karena itu tombol sinkron di atas belum bisa menarik data secara langsung dari browser. '+
-    'Jalur yang benar-benar live memerlukan konektor <b>Google Drive</b> yang dihubungkan lewat obrolan Claude — setelah tersambung, beri tahu Claude untuk mempublikasikan ulang dashboard dengan sinkron via konektor tersebut. '+
-    'Sampai saat itu, baris mentah yang dipakai adalah snapshot database (Papua &amp; Papua Barat) dan nilai pivot Excel dipakai sebagai referensi untuk wilayah lain.';
+    'Dashboard ini membaca baris mentah tab <b>DATABASE</b> pada spreadsheet sumber '+
+    '(<a href="'+SHEET_EDIT_URL+'" target="_blank" rel="noopener">buka spreadsheet</a>) lalu menghitung seluruh level '+
+    '(Nama Dist → Nama Area → Nama Ulp → Petugas) memakai rumus: Total Skor = Skor Hari Kerja + Skor Performa + Skor Produktivitas, '+
+    'Persentase Skor = Total Skor ÷ 15 × 100, Rata² Jam Kerja = RCT ÷ ROUND(Hari Kerja,0) + 1,5. Tidak ada data Excel offline yang dipakai lagi.'+
+    (extra ? '<br><br><b>Catatan:</b> '+extra : '');
 }
 explainSync();
 
 document.getElementById('toggleSync').addEventListener('change', (e)=>{
   autoSyncOn = e.target.checked;
-  if(autoSyncOn){
-    setStatus('● Menunggu koneksi Google Drive untuk menarik data live — lihat catatan di bawah tabel', 'wait');
-    trySync();
-    syncTimer = setInterval(trySync, 60000);
-  } else {
-    setStatus('● Terputus — memakai data lokal (snapshot database + referensi pivot Excel)', 'wait');
-    if(syncTimer) clearInterval(syncTimer);
-  }
+  if(autoSyncOn){ trySync(); syncTimer = setInterval(trySync, 60000); }
+  else { if(syncTimer) clearInterval(syncTimer); setStatus('● Sinkron otomatis dimatikan', 'wait'); }
 });
 document.getElementById('btnSyncNow').addEventListener('click', trySync);
 
 async function trySync(){
-  setStatus('● Mencoba menarik data dari Google Sheets…', 'wait');
+  setStatus('● Menarik data dari Google Sheets…', 'wait');
   try{
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
     const res = await fetch(url);
@@ -200,18 +183,24 @@ async function trySync(){
     const text = await res.text();
     const rows = parseCSV(text);
     const mapped = mapDatabaseRows(rows);
-    if(mapped.length){
-      RAW = mapped;
-      lastSyncAt = new Date();
-      setStatus('● Terhubung — '+mapped.length+' baris petugas dimuat langsung dari DATABASE ('+lastSyncAt.toLocaleTimeString('id-ID')+')', 'ok');
-      render();
-    } else {
-      throw new Error('Kolom tidak cocok / data kosong');
-    }
+    if(!mapped.length) throw new Error('Kolom tidak cocok / data kosong');
+    RAW = mapped;
+    const now = new Date();
+    setStatus('● Terhubung — '+mapped.length+' baris petugas, '+countUnique(RAW,'dist')+' Dist, '+countUnique(RAW,'area')+' Area, '+countUnique(RAW,'ulp')+' ULP ('+now.toLocaleTimeString('id-ID')+')', 'ok');
+    explainSync();
+    rebuildFilters();
+    render();
   }catch(err){
-    setStatus('● Gagal terhubung ke Google Sheets dari halaman ini (diblokir kebijakan artefak) — tetap memakai data lokal', 'wait');
+    setStatus('● Gagal terhubung ke Google Sheets dari halaman ini', 'err');
+    explainSync('Permintaan ke <code>docs.google.com</code> diblokir oleh browser/halaman ini (kebijakan keamanan/CORS), sehingga data tidak bisa dimuat di sini. Pastikan spreadsheet dibagikan sebagai "Anyone with the link – Viewer", lalu coba lagi dari lingkungan hosting yang mengizinkan permintaan keluar (mis. GitHub Pages). Error: '+esc(err.message||String(err)));
+    if(!RAW.length){
+      document.getElementById('crumb').innerHTML = 'Tidak ada data — sinkronisasi database gagal.';
+      document.getElementById('mainTable').innerHTML = '<tr><td class="empty">Belum ada data. Klik "Tarik Data Sekarang" setelah memastikan akses spreadsheet, atau jalankan halaman ini di hosting tanpa pembatasan CORS.</td></tr>';
+      document.getElementById('chartBars').innerHTML='';
+    }
   }
 }
+function countUnique(arr,key){ return new Set(arr.map(r=>r[key])).size; }
 
 function parseCSV(text){
   const rows=[]; let row=[]; let field=''; let inQ=false;
@@ -233,33 +222,36 @@ function parseCSV(text){
   return rows;
 }
 
+function jamKerjaOf(rct, hariKerja){ return (rct||0)/Math.max(1,Math.round(hariKerja||1)) + 1.5; }
+
 function mapDatabaseRows(rows){
   if(!rows.length) return [];
   const header = rows[0].map(h=>h.trim().toLowerCase());
   const idx = name => header.indexOf(name.toLowerCase());
-  const iNama = idx('nama petugas'), iDist = idx('nama dist'), iArea = idx('nama area'), iUlp = idx('nama ulp'),
-        iSH = idx('skor hari kerja'), iSP = idx('skor performa'), iSPr = idx('skor produktivitas'),
-        iRCT = idx('rct'), iHR = idx('jumlah hari realisasi'), iHS = idx('jumlah hari seharusnya');
+  const iNama=idx('nama petugas'), iDist=idx('nama dist'), iArea=idx('nama area'), iUlp=idx('nama ulp'),
+        iSH=idx('skor hari kerja'), iSP=idx('skor performa'), iSPr=idx('skor produktivitas'),
+        iRCT=idx('rct'), iHR=idx('jumlah hari realisasi'), iHS=idx('jumlah hari seharusnya');
   if(iNama<0 || iDist<0 || iArea<0 || iUlp<0) return [];
   const num = v => { const n = parseFloat((v||'').toString().replace(',','.')); return isNaN(n)?0:n; };
   const out=[];
   for(let r=1;r<rows.length;r++){
     const row = rows[r];
-    if(!row || !row[iNama]) continue;
+    if(!row || !row[iNama] || !row[iNama].trim()) continue;
     const sh=num(row[iSH]), sp=num(row[iSP]), spr=num(row[iSPr]);
+    const rct=num(row[iRCT]), hr=num(row[iHR]);
     out.push({
-      nama: row[iNama], dist: row[iDist], area: row[iArea], ulp: row[iUlp],
+      nama: row[iNama].trim(), dist: (row[iDist]||'').trim(), area: (row[iArea]||'').trim(), ulp: (row[iUlp]||'').trim(),
       skor_hari: sh, skor_performa: sp, skor_produktivitas: spr,
       total_skor: sh+sp+spr, persen_skor: (sh+sp+spr)/15*100,
-      rct: num(row[iRCT]), hari_realisasi: num(row[iHR]), hari_seharusnya: num(row[iHS])
+      rct: rct, hari_realisasi: hr, hari_seharusnya: num(row[iHS]),
+      jam_kerja: jamKerjaOf(rct, hr)
     });
   }
   return out;
 }
 
-// ---- Mesin agregasi: hitung langsung dari RAW; jika kosong, pakai referensi pivot Excel ----
+// ---- Mesin agregasi: seluruhnya dihitung dari RAW (live database) ----
 function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
-
 function computeFromRaw(rows){
   if(!rows.length) return null;
   const rct = avg(rows.map(r=>r.rct));
@@ -269,22 +261,30 @@ function computeFromRaw(rows){
   const skorPerforma = avg(rows.map(r=>r.skor_performa));
   const skorProd = avg(rows.map(r=>r.skor_produktivitas));
   const totalSkor = skorHari+skorPerforma+skorProd;
-  const persenSkor = totalSkor/15*100;
   return { rct, hari_kerja:hariKerja, jam_kerja:jamKerja, skor_hari:skorHari, skor_performa:skorPerforma,
-            skor_produktivitas:skorProd, total_skor:totalSkor, persen_skor:persenSkor, n:rows.length, source:'live' };
+            skor_produktivitas:skorProd, total_skor:totalSkor, persen_skor: totalSkor/15*100, n:rows.length };
 }
-
-function getRow(level, nama){
-  let filterFn, fbList;
-  if(level==='wilayah'){ filterFn = p=>p.dist===nama; fbList = FALLBACK.wilayah; }
-  else if(level==='up3'){ filterFn = p=>p.area===nama; fbList = FALLBACK.up3; }
-  else { filterFn = p=>p.ulp===nama; fbList = FALLBACK.ulp; }
-  const raw = RAW.filter(filterFn);
-  const computed = computeFromRaw(raw);
-  const fb = fbList.find(x=>x.nama===nama);
-  if(computed) return Object.assign({nama, no: fb?fb.no:undefined, persen_naik: fb?fb.persen_naik:undefined}, computed);
-  if(fb) return Object.assign({}, fb, {source:'ref'});
-  return null;
+function uniqueSorted(arr){ return Array.from(new Set(arr)).sort((a,b)=>a.localeCompare(b)); }
+function distList(){ return uniqueSorted(RAW.map(r=>r.dist).filter(Boolean)); }
+function areaListOf(dist){ return uniqueSorted(RAW.filter(r=>!dist||r.dist===dist).map(r=>r.area).filter(Boolean)); }
+function ulpListOf(area){ return uniqueSorted(RAW.filter(r=>!area||r.area===area).map(r=>r.ulp).filter(Boolean)); }
+function distOfArea(area){ const f = RAW.find(r=>r.area===area); return f?f.dist:''; }
+function areaOfUlp(ulp){ const f = RAW.find(r=>r.ulp===ulp); return f?f.area:''; }
+function rankedRows(list){
+  return list.map((nama,i)=>Object.assign({nama}, computeFromRaw(RAW.filter(list.filterFn(nama)))))
+             .filter(r=>r.n)
+             .sort((a,b)=>b.persen_skor-a.persen_skor)
+             .map((r,i)=>Object.assign({no:i+1}, r));
+}
+function aggBy(names, filterFn){
+  const rows = names.map(nama=>{
+    const rows_ = RAW.filter(r=>filterFn(r,nama));
+    const c = computeFromRaw(rows_);
+    return c ? Object.assign({nama}, c) : null;
+  }).filter(Boolean);
+  rows.sort((a,b)=>b.persen_skor-a.persen_skor);
+  rows.forEach((r,i)=>r.no=i+1);
+  return rows;
 }
 
 // ---- UI helpers ----
@@ -292,7 +292,6 @@ function thresholdClass(v){ if(v>70) return 'green'; if(v>=40) return 'yellow'; 
 function badge(v){ const c=thresholdClass(v); return `<span class="badge b-${c}">${v.toFixed(2)}</span>`; }
 function fmt(v,d=2){ return (v===undefined||v===null||isNaN(v)) ? '-' : Number(v).toFixed(d); }
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-function sourceTag(src){ if(src==='live') return '<span class="tag tag-live">LIVE</span>'; if(src==='ref') return '<span class="tag tag-ref">REF EXCEL</span>'; return ''; }
 
 const distSel = document.getElementById('fDist');
 const areaSel = document.getElementById('fArea');
@@ -302,58 +301,45 @@ const sulCk   = document.getElementById('fSulmapana');
 function fillSelect(sel, items, placeholder){
   sel.innerHTML = `<option value="">${placeholder}</option>` + items.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
-fillSelect(distSel, FALLBACK.wilayah.map(w=>w.nama), 'Semua Dist');
-
 let state = { level:'sulmapana', dist:'', area:'', ulp:'' };
 
-function up3sOf(dist){ return FALLBACK.up3.filter(u=>!dist || u.wilayah===dist); }
-function ulpsOf(area){ return FALLBACK.ulp.filter(u=>!area || u.up3===area); }
-function distOfArea(area){ const r = FALLBACK.up3.find(u=>u.nama===area); return r? r.wilayah: ''; }
-function areaOfUlp(ulp){ const r = FALLBACK.ulp.find(u=>u.nama===ulp); return r? r.up3: ''; }
-function petugasOf(ulp){ return RAW.filter(p=>p.ulp===ulp); }
-
-function refreshAreaOptions(){ fillSelect(areaSel, up3sOf(state.dist).map(u=>u.nama), 'Semua Area'); areaSel.value = state.area; }
-function refreshUlpOptions(){ fillSelect(ulpSel, ulpsOf(state.area).map(u=>u.nama), 'Semua ULP'); ulpSel.value = state.ulp; }
-refreshAreaOptions(); refreshUlpOptions();
+function rebuildFilters(){
+  [distSel,areaSel,ulpSel].forEach(s=>s.disabled=false);
+  fillSelect(distSel, distList(), 'Semua Dist'); distSel.value = state.dist;
+  fillSelect(areaSel, areaListOf(state.dist), 'Semua Area'); areaSel.value = state.area;
+  fillSelect(ulpSel, ulpListOf(state.area), 'Semua ULP'); ulpSel.value = state.ulp;
+}
 
 sulCk.addEventListener('change', ()=>{
   state = { level: sulCk.checked ? 'sulmapana' : 'none', dist:'', area:'', ulp:'' };
-  distSel.value=''; areaSel.value=''; ulpSel.value='';
-  refreshAreaOptions(); refreshUlpOptions(); render();
+  rebuildFilters(); render();
 });
 distSel.addEventListener('change', ()=>{
   sulCk.checked = true;
   state.dist = distSel.value; state.area=''; state.ulp='';
   state.level = state.dist ? 'dist' : 'sulmapana';
-  refreshAreaOptions(); refreshUlpOptions(); render();
+  rebuildFilters(); render();
 });
 areaSel.addEventListener('change', ()=>{
   sulCk.checked = true;
   state.area = areaSel.value;
-  if(state.area){ state.dist = distOfArea(state.area) || state.dist; distSel.value = state.dist; }
+  if(state.area) state.dist = distOfArea(state.area) || state.dist;
   state.ulp='';
   state.level = state.area ? 'area' : (state.dist ? 'dist' : 'sulmapana');
-  refreshAreaOptions(); areaSel.value = state.area; refreshUlpOptions(); render();
+  rebuildFilters(); render();
 });
 ulpSel.addEventListener('change', ()=>{
   sulCk.checked = true;
   state.ulp = ulpSel.value;
-  if(state.ulp){
-    state.area = areaOfUlp(state.ulp) || state.area;
-    state.dist = distOfArea(state.area) || state.dist;
-    distSel.value = state.dist; refreshAreaOptions(); areaSel.value = state.area;
-    refreshUlpOptions(); ulpSel.value = state.ulp;
-  }
+  if(state.ulp){ state.area = areaOfUlp(state.ulp) || state.area; state.dist = distOfArea(state.area) || state.dist; }
   state.level = state.ulp ? 'ulp' : (state.area ? 'area' : (state.dist ? 'dist' : 'sulmapana'));
-  render();
+  rebuildFilters(); render();
 });
 
 const COLS = {
-  agg: [['No','no'],['Nama','nama'],['Rata² RCT','rct'],['Rata² Hari Kerja','hari_kerja'],['Rata² Jam Kerja','jam_kerja'],['Skor Hari Kerja','skor_hari'],['Skor Performa','skor_performa'],['Skor Produktivitas','skor_produktivitas'],['Total Skor','total_skor'],['Persentase Skor','persen_skor'],['% Kenaikan','persen_naik_pct']],
-  petugas: [['Nama Petugas','nama'],['ULP','ulp'],['RCT','rct'],['Hari Realisasi','hari_realisasi'],['Hari Seharusnya','hari_seharusnya'],['Skor Hari Kerja','skor_hari'],['Skor Performa','skor_performa'],['Skor Produktivitas','skor_produktivitas'],['Total Skor','total_skor'],['Persentase Skor','persen_skor']],
+  agg: [['No','no'],['Nama','nama'],['Rata² RCT','rct'],['Rata² Hari Kerja','hari_kerja'],['Rata² Jam Kerja','jam_kerja'],['Skor Hari Kerja','skor_hari'],['Skor Performa','skor_performa'],['Skor Produktivitas','skor_produktivitas'],['Total Skor','total_skor'],['Persentase Skor','persen_skor']],
+  petugas: [['Nama Petugas','nama'],['ULP','ulp'],['RCT','rct'],['Hari Realisasi','hari_realisasi'],['Hari Seharusnya','hari_seharusnya'],['Rata² Jam Kerja','jam_kerja'],['Skor Hari Kerja','skor_hari'],['Skor Performa','skor_performa'],['Skor Produktivitas','skor_produktivitas'],['Total Skor','total_skor'],['Persentase Skor','persen_skor']],
 };
-
-function prepRow(r){ const o=Object.assign({},r); if(o.persen_naik!==undefined) o.persen_naik_pct=o.persen_naik*100; return o; }
 
 let currentTableType='agg', currentRows=[];
 
@@ -362,25 +348,23 @@ function renderTable(type, rows){
   const cols = COLS[type];
   const table = document.getElementById('mainTable');
   if(!rows.length){
-    table.innerHTML = `<tr><td class="empty">Data belum tersedia untuk pilihan ini di database lokal maupun referensi Excel. Aktifkan sinkron otomatis untuk memuat baris terbaru.</td></tr>`;
+    table.innerHTML = `<tr><td class="empty">Belum ada data untuk pilihan ini di database.</td></tr>`;
     document.getElementById('chartBars').innerHTML=''; return;
   }
   let thead = '<thead><tr>' + cols.map(c=>`<th>${c[0]}</th>`).join('') + '</tr></thead>';
-  let body = '<tbody>' + rows.map((raw,i)=>{
-    const r = prepRow(raw);
+  let body = '<tbody>' + rows.map((r,i)=>{
     return '<tr>' + cols.map(c=>{
       const key=c[1];
-      if(key==='nama') return `<td class="name">${esc(r[key])}${sourceTag(r.source)}</td>`;
+      if(key==='nama') return `<td class="name">${esc(r[key])}</td>`;
       if(key==='ulp') return `<td>${esc(r[key])}</td>`;
       if(key==='no') return `<td>${r[key]!==undefined?r[key]:i+1}</td>`;
       if(key==='persen_skor') return `<td>${badge(r[key])}</td>`;
-      if(key==='persen_naik_pct') return `<td>${r[key]===undefined?'-':(r[key]>=0?'+':'')+fmt(r[key],1)+'%'}</td>`;
       return `<td>${fmt(r[key])}</td>`;
     }).join('') + '</tr>';
   }).join('') + '</tbody>';
   table.innerHTML = thead + body;
 
-  const sorted = rows.map(prepRow).slice().sort((a,b)=>b.persen_skor-a.persen_skor);
+  const sorted = rows.slice().sort((a,b)=>b.persen_skor-a.persen_skor);
   document.getElementById('chartBars').innerHTML = sorted.map(r=>{
     const c = thresholdClass(r.persen_skor);
     const w = Math.max(2, Math.min(100, r.persen_skor));
@@ -388,11 +372,11 @@ function renderTable(type, rows){
   }).join('');
 }
 
-function miniCard(title, count, rows, keyName){
+function miniCard(title, rows, keyName){
   if(!rows.length) return `<div class="mini"><h3>${title}</h3><div class="row"><span>Data belum tersedia</span></div></div>`;
-  const sorted = rows.map(prepRow).slice().sort((a,b)=>b.persen_skor-a.persen_skor);
+  const sorted = rows.slice().sort((a,b)=>b.persen_skor-a.persen_skor);
   const top=sorted[0], bottom=sorted[sorted.length-1];
-  return `<div class="mini"><h3>${title}</h3><div class="count">${count}</div>
+  return `<div class="mini"><h3>${title}</h3><div class="count">${rows.length}</div>
     <div class="row"><span>Tertinggi</span><span>${esc(top[keyName])} · ${badge(top.persen_skor)}</span></div>
     <div class="row"><span>Terendah</span><span>${esc(bottom[keyName])} · ${badge(bottom.persen_skor)}</span></div></div>`;
 }
@@ -403,49 +387,48 @@ function render(){
   const preview = document.getElementById('previewGrid');
   preview.innerHTML='';
 
+  if(!RAW.length){ return; }
+
   if(state.level==='none'){
     crumb.innerHTML='Aktifkan filter <b>SULMAPANA</b> untuk mulai melihat data.';
     renderTable('agg', []); return;
   }
   if(state.level==='sulmapana'){
-    crumb.innerHTML = 'Regional <b>SULMAPANA</b> — seluruh Nama Dist';
-    const rows = FALLBACK.wilayah.map(w=>getRow('wilayah', w.nama)).filter(Boolean);
+    crumb.innerHTML = 'Regional <b>SULMAPANA</b> — seluruh Nama Dist (' + distList().length + ')';
+    const rows = aggBy(distList(), (r,n)=>r.dist===n);
     renderTable('agg', rows);
-    const areaRows = FALLBACK.up3.map(u=>getRow('up3',u.nama)).filter(Boolean);
-    const ulpRows = FALLBACK.ulp.map(u=>getRow('ulp',u.nama)).filter(Boolean);
-    preview.appendChild(el(miniCard('Preview Nama Area (UP3)', FALLBACK.up3.length, areaRows, 'nama')));
-    preview.appendChild(el(miniCard('Preview Nama ULP', FALLBACK.ulp.length, ulpRows, 'nama')));
-    preview.appendChild(el(miniCard('Preview Petugas', RAW.length, RAW, 'nama')));
+    const areaRows = aggBy(areaListOf(''), (r,n)=>r.area===n);
+    const ulpRows = aggBy(ulpListOf(''), (r,n)=>r.ulp===n);
+    preview.appendChild(el(miniCard('Preview Nama Area (UP3)', areaRows, 'nama')));
+    preview.appendChild(el(miniCard('Preview Nama ULP', ulpRows, 'nama')));
+    preview.appendChild(el(miniCard('Preview Petugas', RAW, 'nama')));
   }
   else if(state.level==='dist'){
     crumb.innerHTML = `Nama Dist: <b>${esc(state.dist)}</b>`;
-    const list = up3sOf(state.dist);
-    const rows = list.map(u=>getRow('up3', u.nama)).filter(Boolean);
+    const rows = aggBy(areaListOf(state.dist), (r,n)=>r.area===n && r.dist===state.dist);
     renderTable('agg', rows);
-    const ulpList = FALLBACK.ulp.filter(u=>list.some(a=>a.nama===u.up3));
-    const ulpRows = ulpList.map(u=>getRow('ulp',u.nama)).filter(Boolean);
+    const ulpRows = aggBy(uniqueSorted(RAW.filter(r=>r.dist===state.dist).map(r=>r.ulp)), (r,n)=>r.ulp===n);
     const petRows = RAW.filter(p=>p.dist===state.dist);
-    preview.appendChild(el(miniCard('Preview Nama ULP', ulpList.length, ulpRows, 'nama')));
-    preview.appendChild(el(miniCard('Preview Petugas', petRows.length, petRows, 'nama')));
+    preview.appendChild(el(miniCard('Preview Nama ULP', ulpRows, 'nama')));
+    preview.appendChild(el(miniCard('Preview Petugas', petRows, 'nama')));
   }
   else if(state.level==='area'){
     crumb.innerHTML = `Nama Dist: <b>${esc(state.dist)}</b> &rsaquo; Nama Area: <b>${esc(state.area)}</b>`;
-    const list = ulpsOf(state.area);
-    const rows = list.map(u=>getRow('ulp', u.nama)).filter(Boolean);
+    const rows = aggBy(ulpListOf(state.area), (r,n)=>r.ulp===n && r.area===state.area);
     renderTable('agg', rows);
     const petRows = RAW.filter(p=>p.area===state.area);
-    preview.appendChild(el(miniCard('Preview Petugas', petRows.length, petRows, 'nama')));
+    preview.appendChild(el(miniCard('Preview Petugas', petRows, 'nama')));
   }
   else if(state.level==='ulp'){
     crumb.innerHTML = `Nama Dist: <b>${esc(state.dist)}</b> &rsaquo; Area: <b>${esc(state.area)}</b> &rsaquo; ULP: <b>${esc(state.ulp)}</b>`;
-    renderTable('petugas', petugasOf(state.ulp));
+    renderTable('petugas', RAW.filter(p=>p.ulp===state.ulp));
   }
 }
 
 document.getElementById('btnCsv').addEventListener('click', ()=>{
   const cols = COLS[currentTableType];
   const lines = [cols.map(c=>c[0]).join(';')];
-  currentRows.map(prepRow).forEach((r,i)=>{
+  currentRows.forEach((r,i)=>{
     lines.push(cols.map(c=>{
       const key=c[1]; let v = key==='no' ? (r[key]!==undefined?r[key]:i+1) : r[key];
       if(typeof v === 'number') v = v.toFixed(2).replace('.',',');
@@ -459,7 +442,8 @@ document.getElementById('btnCsv').addEventListener('click', ()=>{
 });
 
 document.getElementById('asOf').textContent = 'Dimuat: ' + new Date().toLocaleString('id-ID',{dateStyle:'long',timeStyle:'short'});
-render();
+trySync();
+syncTimer = setInterval(trySync, 60000);
 </script>
 </body>
 </html>
